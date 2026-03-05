@@ -9,7 +9,7 @@ import GameConfig from "@/models/GameConfig";
 
 /** Returns Vietnam local time as a Date (UTC+7) */
 function getVietnamTime(): Date {
-  return new Date(Date.now() + (7 * 60 * 60 * 1000)); // UTC+7
+  return new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Ho_Chi_Minh"}));
 }
 
 function countWords(text: string): number {

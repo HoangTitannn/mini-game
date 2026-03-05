@@ -59,8 +59,8 @@ export default async function handler(
 
   // ─── 2. Time validation ───────────────────────
   const vnNow = getVietnamTime();
-  const startTime = new Date(gameConfig.startTime);
-  const endTime = new Date(gameConfig.endTime);
+  const startTime = new Date(new Date(gameConfig.startTime).toLocaleString("en-US", {timeZone: "Asia/Ho_Chi_Minh"}));
+  const endTime = new Date(new Date(gameConfig.endTime).toLocaleString("en-US", {timeZone: "Asia/Ho_Chi_Minh"}));
 
   if (vnNow < startTime || vnNow >= endTime) {
     return res.status(403).json({

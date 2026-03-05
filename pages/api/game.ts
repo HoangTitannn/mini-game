@@ -86,11 +86,7 @@ export default async function handler(
     }
 
     // ─── After end time (ended) ──────────────────
-    // Cache aggressively – no more DB writes expected after end time
-    res.setHeader(
-      "Cache-Control",
-      "public, s-maxage=3600, stale-while-revalidate=86400",
-    );
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
 
     const rows = await GameData.find({})
       .sort({ timestamp: 1 })

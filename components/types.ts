@@ -12,6 +12,7 @@ export type Screen =
 
 export interface GamePayload {
   status: "not_started" | "playing" | "ended";
+  configId: string;
   participants: string[];
   lastSentence: string | null;
   fullStory: { playerName: string; sentence: string }[];

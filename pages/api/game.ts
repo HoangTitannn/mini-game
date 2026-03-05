@@ -15,6 +15,7 @@ type GameStatus = "not_started" | "playing" | "ended";
 
 interface GamePayload {
   status: GameStatus;
+  configId: string;
   participants: string[];
   lastSentence: string | null;
   fullStory: { playerName: string; sentence: string }[];
@@ -48,11 +49,14 @@ export default async function handler(
     const now = new Date();
     const startTime = new Date(gameConfig.startTime);
     const endTime = new Date(gameConfig.endTime);
+    const configId = String(gameConfig._id);
 
     // ─── Before start time ───────────────────────────
     if (now < startTime) {
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
       return res.status(200).json({
         status: "not_started",
+        configId,
         participants: [],
         lastSentence: null,
         fullStory: [],
@@ -64,7 +68,6 @@ export default async function handler(
 
     // ─── During game time (playing) ──────────────
     if (now >= startTime && now < endTime) {
-      // Fetch all records sorted by time ascending
       const rows = await GameData.find({})
         .sort({ timestamp: 1 })
         .select("playerName sentence -_id")
@@ -74,8 +77,10 @@ export default async function handler(
       const lastSentence =
         rows.length > 0 ? rows[rows.length - 1].sentence : null;
 
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
       return res.status(200).json({
         status: "playing",
+        configId,
         participants,
         lastSentence,
         fullStory: [],
@@ -86,7 +91,18 @@ export default async function handler(
     }
 
     // ─── After end time (ended) ──────────────────
-    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    // Cache aggressively only when ?v=configId is present in the URL.
+    // The configId changes every new game, so old cached responses are
+    // automatically bypassed when the game resets.
+    const hasVersionParam = req.query.v === configId;
+    if (hasVersionParam) {
+      res.setHeader(
+        "Cache-Control",
+        "public, s-maxage=3600, stale-while-revalidate=86400",
+      );
+    } else {
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    }
 
     const rows = await GameData.find({})
       .sort({ timestamp: 1 })
@@ -99,6 +115,7 @@ export default async function handler(
 
     return res.status(200).json({
       status: "ended",
+      configId,
       participants,
       lastSentence,
       fullStory: rows.map((r) => ({

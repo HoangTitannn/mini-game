@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { connectToDatabase } from "@/lib/mongodb";
-import GameConfig from "@/models/GameConfig";
+import GameConfig, { IGameConfig } from "@/models/GameConfig";
 
 // ──────────────────────────────────────────────
 // Types
@@ -89,7 +89,7 @@ export default async function handler(
         await GameConfig.updateMany({ configId: { $ne: configId } }, { isActive: false });
       }
 
-      const updateData: any = {};
+      const updateData: Partial<IGameConfig> = {};
       if (startTime) updateData.startTime = new Date(startTime);
       if (endTime) updateData.endTime = new Date(endTime);
       if (maxWords !== undefined) updateData.maxWords = maxWords;

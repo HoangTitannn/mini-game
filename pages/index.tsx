@@ -44,6 +44,7 @@ export default function Home() {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
   // ── Game config from database ──────────────────────────────────────────
+  const [configId, setConfigId] = useState<string | null>(null);
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [endTime, setEndTime] = useState<Date | null>(null);
   const [maxWords, setMaxWords] = useState<number>(20); // default fallback
@@ -56,41 +57,51 @@ export default function Home() {
   }, []);
 
   // ── API helpers ──────────────────────────────────────────────────────────
+  const applyGameData = useCallback((data: GamePayload) => {
+    setConfigId(data.configId);
+    setParticipants(data.participants);
+    setLastSentence(data.lastSentence);
+    setStartTime(new Date(data.startTime));
+    setEndTime(new Date(data.endTime));
+    setMaxWords(data.maxWords);
+  }, []);
+
+  // Build fetch URL: use ?v=configId for ended state so CDN can cache
+  // per-game-session. Without the param the response is always fresh.
+  const gameUrl = useCallback(
+    (id: string | null) => (id ? `/api/game?v=${id}` : "/api/game"),
+    [],
+  );
+
   const fetchGameData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/game");
+      // Always bypass cache on initial/playing fetch to get latest configId
+      const res = await fetch("/api/game", { cache: "no-store" });
       const data: GamePayload = await res.json();
-      setParticipants(data.participants);
-      setLastSentence(data.lastSentence);
-      setStartTime(new Date(data.startTime));
-      setEndTime(new Date(data.endTime));
-      setMaxWords(data.maxWords);
+      applyGameData(data);
     } catch {
       addToast("Không thể tải dữ liệu game. Thử lại nhé!", "error");
     } finally {
       setLoading(false);
     }
-  }, [addToast]);
+  }, [addToast, applyGameData]);
 
-  const fetchResults = useCallback(async () => {
+  const fetchResults = useCallback(async (id: string | null = null) => {
     setLoading(true);
     try {
-      const res = await fetch("/api/game");
+      // Use versioned URL so CDN can cache the final story per game session
+      const res = await fetch(gameUrl(id), { cache: "no-store" });
       const data: GamePayload = await res.json();
-      setParticipants(data.participants);
-      setLastSentence(data.lastSentence);
+      applyGameData(data);
       setFullStory(data.fullStory);
-      setStartTime(new Date(data.startTime));
-      setEndTime(new Date(data.endTime));
-      setMaxWords(data.maxWords);
       setScreen("results");
     } catch {
       addToast("Không thể tải kết quả. Thử lại nhé!", "error");
     } finally {
       setLoading(false);
     }
-  }, [addToast]);
+  }, [addToast, applyGameData, gameUrl]);
 
   // ── Fetch initial config on mount ──────────────────────────────────────
   useEffect(() => {
@@ -125,7 +136,7 @@ export default function Home() {
     }
 
     if (now >= endTime) {
-      fetchResults();
+      fetchResults(configId);
     } else if (now >= startTime) {
       setScreen("welcome");
     } else {
@@ -144,7 +155,7 @@ export default function Home() {
   useEffect(() => {
     if (!now || !endTime) return;
     if ((screen === "playing" || screen === "submitted") && now >= endTime) {
-      fetchResults();
+      fetchResults(configId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [now, endTime, screen]);
@@ -153,11 +164,11 @@ export default function Home() {
   useEffect(() => {
     if (screen !== "playing") return;
     const id = setInterval(() => {
-      fetch("/api/game")
+      fetch("/api/game", { cache: "no-store" })
         .then((r) => r.json())
         .then((data: GamePayload) => {
+          setConfigId(data.configId);
           setParticipants(data.participants);
-          // Only update lastSentence if it changed (avoid flickering input area)
           setLastSentence((prev) => (data.lastSentence !== prev ? data.lastSentence : prev));
         })
         .catch(() => {/* silent */ });
@@ -181,13 +192,9 @@ export default function Home() {
 
     // Fetch latest data and check again to be sure
     try {
-      const res = await fetch("/api/game");
+      const res = await fetch("/api/game", { cache: "no-store" });
       const data = await res.json();
-      setParticipants(data.participants);
-      setLastSentence(data.lastSentence);
-      setStartTime(new Date(data.startTime));
-      setEndTime(new Date(data.endTime));
-      setMaxWords(data.maxWords);
+      applyGameData(data);
 
       // Double-check with latest participants
       if (data.participants.includes(name)) {

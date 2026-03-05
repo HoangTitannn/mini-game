@@ -14,7 +14,7 @@ export function GameHeader({ now, startTime, endTime, showClock = true }: GameHe
             <header className="game-header">
                 <div className="header-brand">
                     <span className="header-icon">✍️</span>
-                    <span className="header-title">Câu Chuyện Fireant</span>
+                    <span className="header-title">Mini Game from FireAnt</span>
                 </div>
                 {showClock && (
                     <div className="header-clock">
@@ -33,7 +33,7 @@ export function GameHeader({ now, startTime, endTime, showClock = true }: GameHe
         <header className="game-header">
             <div className="header-brand">
                 <span className="header-icon">✍️</span>
-                <span className="header-title">Câu Chuyện Fireant</span>
+                <span className="header-title">Mini Game from FireAnt</span>
             </div>
             {showClock && (
                 <div className="header-clock">

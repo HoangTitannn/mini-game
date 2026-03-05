@@ -9,10 +9,7 @@ import GameConfig from "@/models/GameConfig";
 
 /** Returns Vietnam local time as a Date (UTC+7) */
 function getVietnamTime(): Date {
-  const now = new Date();
-  const utcOffset = now.getTimezoneOffset(); // negative for ahead of UTC
-  const vnOffset = 7 * 60; // UTC+7 in minutes
-  return new Date(now.getTime() + (utcOffset + vnOffset) * 60 * 1000);
+  return new Date(Date.now() + (7 * 60 * 60 * 1000)); // UTC+7
 }
 
 function countWords(text: string): number {
